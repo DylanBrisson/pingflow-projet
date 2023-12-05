@@ -6,7 +6,7 @@
     <main>
       <div class="container">
         <div class="options">
-          <button @click="requestJob">Demander un job</button>
+          <button @click="requestJob" :disabled="loading">Demander un job</button>
         </div>
         <div class="results">
           <h2>Résultats</h2>
@@ -49,8 +49,27 @@ export default {
         this.loading = false;
         this.dataReady = true;
         this.athletes = [
+          { name: "Jordan Silva" },
+          { name: "Emily Rodriguez" },
+          { name: "Luis Hernandez" },
+          { name: "Mia Santos" },
+          { name: "Victor Lima" },
+          { name: "Athlète 2" },
           { name: "Athlète 1" },
           { name: "Athlète 2" },
+          { name: "Athlète 1" },
+          { name: "Athlète 2" },
+          { name: "Athlète 1" },
+          { name: "Athlète 2" },
+          { name: "Athlète 1" },
+          { name: "Athlète 2" },
+          { name: "Athlète 1" },
+          { name: "Athlète 2" },
+          { name: "Athlète 1" },
+          { name: "Athlète 2" },
+          { name: "Athlète 1" },
+          { name: "Athlète 2" },
+          
           // ... ajoutez d'autres athlètes ici ...
         ];
       }, 2000);
@@ -61,6 +80,7 @@ export default {
 
 <style scoped>
 .app {
+  font-family: 'Arial', sans-serif;
   text-align: center;
 }
 
@@ -68,6 +88,10 @@ header {
   background-color: #4caf50;
   padding: 1em;
   color: white;
+}
+
+h1 {
+  margin: 0;
 }
 
 main {
@@ -84,16 +108,26 @@ main {
 }
 
 button {
-  padding: 1em;
+  padding: 1em 2em;
   background-color: #4caf50;
   color: white;
   border: none;
   cursor: pointer;
   font-size: 1em;
+  transition: background-color 0.3s;
+}
+
+button:disabled {
+  background-color: #bfbfbf;
+  cursor: not-allowed;
 }
 
 .results {
   width: 65%;
+}
+
+h2 {
+  color: #333;
 }
 
 ul {
@@ -106,6 +140,11 @@ li {
   padding: 1em;
   background-color: #f0f0f0;
   border-radius: 5px;
+  transition: transform 0.3s;
+}
+
+li:hover {
+  transform: scale(1.05);
 }
 
 footer {
