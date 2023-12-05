@@ -51,7 +51,7 @@ export default {
         this.athletes = [
           { name: "Jordan Silva" },
           { name: "Emily Rodriguez" },
-          { name: "Luis Hernandez" },
+          { name: "Luis Hernandes" },
           { name: "Mia Santos" },
           { name: "Victor Lima" },
           { name: "Sophia Costa" },
