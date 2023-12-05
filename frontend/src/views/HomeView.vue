@@ -1,13 +1,32 @@
 <template>
-  <div>
-    <h1>Mini-Projet VueJS</h1>
-
-    <button @click="requestJob">Demander un job</button>
-
-    <div v-if="result">
-      <h2>Résultat du job :</h2>
-      <pre>{{ result }}</pre>
-    </div>
+  <div class="app">
+    <header>
+      <h1>PingFlow Pronostics</h1>
+    </header>
+    <main>
+      <div class="container">
+        <div class="options">
+          <button @click="requestJob">Demander un job</button>
+        </div>
+        <div class="results">
+          <h2>Résultats</h2>
+          <div v-if="loading">Chargement en cours...</div>
+          <div v-else>
+            <div v-if="dataReady">
+              <ul>
+                <li v-for="(athlete, index) in athletes" :key="index">
+                  {{ athlete.name }}
+                </li>
+              </ul>
+            </div>
+            <div v-else>Aucune donnée disponible</div>
+          </div>
+        </div>
+      </div>
+    </main>
+    <footer>
+      <p>&copy; 2023 PingFlow</p>
+    </footer>
   </div>
 </template>
 
@@ -15,49 +34,86 @@
 export default {
   data() {
     return {
-      result: null,
+      athletes: [],
+      loading: false,
+      dataReady: false,
     };
   },
   methods: {
     async requestJob() {
-      try {
-        // Demander un job à l'API NodeJS
-        const response = await fetch('http://localhost:3000/request-job/1', {
-          method: 'GET',
-        });
-
-        // Récupérer le résultat du job depuis l'API NodeJS
-        const result = await response.json();
-        this.result = result.message;
-
-        // Attendre quelques secondes avant de réinitialiser le résultat
-        setTimeout(() => {
-          this.result = null;
-        }, 5000);
-      } catch (error) {
-        console.error('Erreur lors de la demande de job :', error);
-      }
+      this.loading = true;
+      // Envoyer la demande de job à l'API Node
+      // Attendre la réponse et mettre à jour les données
+      // (simulate with a timeout)
+      setTimeout(() => {
+        this.loading = false;
+        this.dataReady = true;
+        this.athletes = [
+          { name: "Athlète 1" },
+          { name: "Athlète 2" },
+          // ... ajoutez d'autres athlètes ici ...
+        ];
+      }, 2000);
     },
   },
 };
 </script>
 
 <style scoped>
-h1 {
+.app {
   text-align: center;
-  margin-bottom: 20px;
+}
+
+header {
+  background-color: #4caf50;
+  padding: 1em;
+  color: white;
+}
+
+main {
+  padding: 2em;
+}
+
+.container {
+  display: flex;
+  justify-content: space-between;
+}
+
+.options {
+  width: 30%;
 }
 
 button {
-  font-size: 16px;
-  padding: 10px;
+  padding: 1em;
+  background-color: #4caf50;
+  color: white;
+  border: none;
   cursor: pointer;
+  font-size: 1em;
 }
 
-pre {
+.results {
+  width: 65%;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+li {
+  margin: 0.5em 0;
+  padding: 1em;
   background-color: #f0f0f0;
-  padding: 10px;
   border-radius: 5px;
-  overflow-x: auto;
+}
+
+footer {
+  background-color: #4caf50;
+  padding: 1em;
+  color: white;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
 }
 </style>

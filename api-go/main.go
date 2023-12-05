@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -12,106 +11,89 @@ import (
 	"github.com/gorilla/mux"
 )
 
-
-var ctx = context.Background()
+var redisClient *redis.Client
 
 func main() {
-	// Initialiser le routeur
-	r := mux.NewRouter()
-
-	// Configuration Redis
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       0,
+	// Initialiser le client Redis
+	redisClient = redis.NewClient(&redis.Options{
+		Addr: "localhost:6379", // Adresse de votre serveur Redis
+		DB:   0,
 	})
 
-	// Exposer une route API en GET
-	r.HandleFunc("/miniprojet", func(w http.ResponseWriter, r *http.Request) {
-		// Appel à l'API externe
-		apiData, err := callExternalAPI()
-		if err != nil {
-			log.Printf("Erreur lors de l'appel à l'API externe: %v", err)
-			http.Error(w, "Erreur lors de l'appel à l'API externe", http.StatusInternalServerError)
-			return
-		}
-
-		// Traitement des données si nécessaire
-
-		// Stockage dans Redis avec TTL de 1 minute
-		err = storeInRedis(redisClient, "miniprojet:data", apiData, time.Minute)
-		if err != nil {
-			log.Printf("Erreur lors du stockage dans Redis: %v", err)
-			http.Error(w, "Erreur lors du stockage dans Redis", http.StatusInternalServerError)
-			return
-		}
-
-		// Retourner les données
-		json.NewEncoder(w).Encode(apiData)
-	}).Methods("GET")
-
-	// Écouter les jobs via pub/sub Redis
-	pubsub := redisClient.Subscribe(ctx, "miniprojet:jobs")
-	defer pubsub.Close()
-
-	go func() {
-		for {
-			msg, err := pubsub.ReceiveMessage(ctx)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-
-			// Gérer les jobs reçus
-			jobData := // Extraire les données du job depuis msg
-			apiData, err := processJob(jobData)
-			if err != nil {
-				log.Printf("Erreur lors du traitement du job: %v", err)
-				continue
-			}
-
-			// Stockage dans Redis avec TTL de 1 minute
-			err = storeInRedis(redisClient, "miniprojet:data", apiData, time.Minute)
-			if err != nil {
-				log.Printf("Erreur lors du stockage dans Redis: %v", err)
-				continue
-			}
-
-			// Publier un message via pub/sub pour indiquer que les données sont prêtes
-			pubsub.Publish(ctx, "miniprojet:data_ready", "miniprojet:data")
-		}
-	}()
+	// Créer le routeur HTTP avec Gorilla Mux
+	router := mux.NewRouter()
+	router.HandleFunc("/miniprojet", handleMiniprojet).Methods("GET")
 
 	// Démarrer le serveur HTTP
-	http.Handle("/", r)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	port := 8080
+	log.Printf("Serveur HTTP écoutant sur le port %d...\n", port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), router))
 }
 
-// Fonction pour appeler l'API externe
-func callExternalAPI() (interface{}, error) {
-	// Implémenter la logique d'appel à l'API externe
-	return nil, nil
+func handleMiniprojet(w http.ResponseWriter, r *http.Request) {
+	// Effectuer l'appel à l'API externe pour récupérer la liste des athlètes
+	athletes, err := fetchAthletes()
+	if err != nil {
+		log.Printf("Erreur lors de la récupération des athlètes: %v\n", err)
+		http.Error(w, "Erreur lors de la récupération des athlètes", http.StatusInternalServerError)
+		return
+	}
+
+	// Stocker la liste des athlètes dans Redis avec un TTL de 1 minute
+	err = storeInRedis(redisClient, "miniprojet:athletes", athletes, time.Minute)
+	if err != nil {
+		log.Printf("Erreur lors du stockage dans Redis: %v\n", err)
+		http.Error(w, "Erreur lors du stockage dans Redis", http.StatusInternalServerError)
+		return
+	}
+
+	// Renvoyer la liste des athlètes au client
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(athletes); err != nil {
+		log.Printf("Erreur lors de l'encodage JSON: %v\n", err)
+		http.Error(w, "Erreur lors de l'encodage JSON", http.StatusInternalServerError)
+		return
+	}
 }
 
-// Fonction pour traiter un job
-func processJob(jobData string) (interface{}, error) {
-	// Implémenter la logique de traitement du job
-	return nil, nil
+func fetchAthletes() ([]Athlete, error) {
+	// Ici, vous devriez effectuer l'appel à l'API externe pour récupérer la liste des athlètes
+	// Remplacez cela par votre logique réelle.
+	// Vous pouvez utiliser la liste générée aléatoirement pour le moment.
+
+	return generateRandomAthletes(), nil
 }
 
-// Fonction pour stocker dans Redis avec TTL
-func storeInRedis(client *redis.Client, key string, data interface{}, ttl time.Duration) error {
-	// Convertir les données en JSON
-	jsonData, err := json.Marshal(data)
+func storeInRedis(client *redis.Client, key string, value interface{}, ttl time.Duration) error {
+	// Convertir la valeur en JSON
+	jsonValue, err := json.Marshal(value)
 	if err != nil {
 		return err
 	}
 
-	// Stocker dans Redis avec TTL
-	err = client.Set(ctx, key, jsonData, ttl).Err()
-	if err != nil {
-		return err
-	}
+// Stocker dans Redis avec un TTL
+err = client.Set(context.Background(), key, jsonValue, ttl).Err()
+if err != nil {
+    return err
+}
 
-	return nil
+}
+
+func generateRandomAthletes() []Athlete {
+
+	var athletes []Athlete
+	for i := 1; i <= 25; i++ {
+		athlete := Athlete{
+			ID:   i,
+			Name: fmt.Sprintf("Athlete %d", i),
+		}
+		athletes = append(athletes, athlete)
+	}
+	return athletes
+}
+
+// Définition de la structure Athlete
+type Athlete struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
 }
